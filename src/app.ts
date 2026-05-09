@@ -2,15 +2,40 @@ import express,{Application, Request, Response} from "express";
 import { setupSwagger } from "./swagger";
 import products from "./data/products";
 import users from "./data/users";
+import pool from "./config/db";
 
 const app: Application = express();
-
 app.use(express.json());
 
 setupSwagger(app);
 
 app.get('/', (req: Request, res: Response) => {
     res.send("Server is running...");
+})
+app.get('/teacher' , async (req: Request, res: Response) => {
+    const result = await pool.query(
+        "SELECT * FROM teacher"
+    );
+    res.status(200).json(result.rows);
+})
+app.get('/teacher/:id', async (req: Request, res: Response) => {
+    const id = req.params.id;
+    const query = `SELECT * FROM teacher WHERE id=${id}`;
+
+    const result = await pool.query(query);
+
+   res.status(200).json(result.rows);
+})
+app.post('/teacher', async (req: Request, res: Response) => {
+    const {name, email, gender, subject} = req.body;
+    const query =  `INSERT INTO teacher (name, email, gender, subject) VALUES ($1, $2, $3, $4)`;
+    const value = [name, email, gender, subject];
+    const result = await pool.query(query, value);
+    res.status(201).json({
+        message: `Successfully created teacher`,
+        success: true,
+        data: result,
+    });
 })
 /**
  * @swagger
@@ -74,6 +99,8 @@ app.get('/user/byName/:name', (req: Request, res: Response) => {
  *                 type: string
  *               age:
  *                 type: number
+ *               role:
+ *                 type: string
  *     responses:
  *       201:
  *         description: User created
